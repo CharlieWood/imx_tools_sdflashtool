@@ -1,0 +1,22 @@
+#! /bin/sh
+
+/etc/init.d/mkdevs.sh /dev
+
+/bin/mount -a
+
+echo "start flash.sh"
+/etc/init.d/flash.sh
+if [ $? -eq 0 ]; then
+	echo -n "flash success, system will be reboot"
+	for i in 1 2 3; do
+		sleep 1
+		echo -n "."
+	done
+	reboot
+else
+	echo "flash failed, please check the flash.log in SD card"
+	while true; do
+		sleep 20
+	done
+fi
+
