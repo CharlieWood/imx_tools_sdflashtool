@@ -14,9 +14,8 @@ if [ $? -eq 0 ]; then
 	done
 	reboot
 else
-	echo "flash failed, please check the flash.log in SD card"
-	while true; do
-		sleep 20
-	done
+	echo "****************** FLASH FAILED *********************"
+	echo "flash failed, please check the "flash.log" in SD card"
+	echo "*****************************************************"
 fi
 
