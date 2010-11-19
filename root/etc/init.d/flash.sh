@@ -9,7 +9,7 @@
 #   |----[uramdisk.img]
 #   |----[system.img]
 #   |----[userdata.img]
-#   |----[uramdisk-recovery.img]
+#   |----[recovery.img]
 #
 
 # flash sd card define
@@ -97,6 +97,21 @@ mkfs()
 	return 0
 }
 
+# check_img_space_var <img_name> <var_name>
+check_img_space_var()
+{
+	# check system_space size
+	if [ -f "$img_path/$1" ]; then
+		img_size=$(((`stat -c %s "$img_path/$1"` + 1048575) / 1048576))
+
+		eval "var_space=\$$2"
+		if [ "$var_space" -lt "$img_size" ]; then
+			do_log "WARNING: enlarge image space $2 for "$1" = $img_size"
+			eval "\$$2=$img_size"
+		fi
+	fi
+}
+
 # doapartition <no_args>_
 do_partition()
 {
@@ -104,14 +119,6 @@ do_partition()
 	if [ -f "$img_path/partition.cfg" ]; then
 		. "$img_path/partition.cfg"
 	fi
-
-	show_message -n "get target device geometry ... "
-	get_device_geometry
-	if [ $? -ne 0 ]; then
-		show_message "FAIL"
-		return 1
-	fi
-	show_message "OK"
 
 	# check xxx_space variable
 	if [ -z "$boot_space" -o -z "$system_space" -o \
@@ -121,14 +128,26 @@ do_partition()
 	fi
 
 	# check system_space size
-	if [ -f "$img_path/system.img" ]; then
-		system_img_size=$(((`stat -c %s "$img_path/system.img"` + 1048575) / 1048576))
+	check_img_space_var "system.img" "system_space"
+	check_img_space_var "recovery.img" "recovery_space"
 
-		if [ "$system_space" -lt "$system_img_size" ]; then
-			do_log "WARNING: enlarge system_space to system.img = $system_img_size"
-			system_space=$system_img_size
-		fi
+	# clear MBR
+	show_message -n "clear old partition table ... "
+	dd if=/dev/zero of="$target_dev" bs=1 seek=446 count=64 > /dev/null 2>&1
+	if [ $? -ne 0 ]; then
+		show_message "FAIL"
+		return 1
 	fi
+	show_message "OK"
+
+	# get target device geometry
+	show_message -n "get target device geometry ... "
+	get_device_geometry
+	if [ $? -ne 0 ]; then
+		show_message "FAIL"
+		return 1
+	fi
+	show_message "OK"
 
 	boot_size=$((boot_space * 1024 * 1024 / dev_unitsize))
 	system_size=$((system_space * 1024 * 1024 / dev_unitsize))
@@ -143,15 +162,6 @@ do_partition()
 	ext_end=$((dev_cyls - recovery_size))
 	data_end=$((system_end + data_size))
 
-	# clear MBR
-	show_message -n "clear old partition table ... "
-	dd if=/dev/zero of="$target_dev" bs=1 seek=446 count=64 > /dev/null 2>&1
-	if [ $? -ne 0 ]; then
-		show_message "FAIL"
-		return 1
-	fi
-	show_message "OK"
-
 	# create new partition table
 	part_cmds="n p 1 $boot_end $sd_end
 				n p 2 $((sd_end+1)) $system_end
@@ -159,6 +169,7 @@ do_partition()
 				n p $((ext_end+1)) AUTO
 				n AUTO $data_end
 				n AUTO AUTO
+				t 1 b
 				w"
 
 	show_message "create new partition table ... "
@@ -203,6 +214,21 @@ get_partitions()
 	done
 }
 
+# check_space_size <img_name> <part_no>
+check_space_size()
+{
+	if [ -f "$img_path/$1" ]; then
+		imgsize=`stat -c %s "$img_path/$1"`
+		eval "partsize=\$partsize_$2"
+		if [ "$partsize" -lt "$imgsize" ]; then
+			show_message "FAIL"
+			show_message "image '$1' large that partition space, can't flash to target device"
+			return 1
+		fi
+	fi
+	return 0
+}
+
 # check_partition <no_args>
 check_partition()
 {
@@ -217,13 +243,10 @@ check_partition()
 	show_message "OK"
 
 	show_message -n "check partition size ... "
-	if [ -f "$img_path/system.img" ]; then
-		size=`stat -c %s "$img_path/system.img"`
-		if [ "$partsize_2" -lt "$size" ]; then
-			show_message "FAIL"
-			show_message "image system.img too large, can't flash to target device"
-			return 1
-		fi
+	check_space_size "system.img" 2 &&
+		check_space_size "recovery.img" 4
+	if [ $? -ne 0 ]; then
+		return 1
 	fi
 	show_message "OK"
 
@@ -329,7 +352,7 @@ echo > "$logfile"
 # wait for SD and eMMC ready
 if [ "`id -u`" != "0" ]
 then
-	show_message "only root can run flash"
+	show_message "ERROR: only root can run flash"
 	exit 1
 fi
 
@@ -339,7 +362,6 @@ show_message "INFO: target device is ${target_dev}"
 
 # wait SD card and eMMC ready
 wait_device 0 "sd" && wait_device 2 "emmc"
-#wait_device "/dev/sd" "SD" && wait_device "/dev/emmc" "eMMC"
 if [ $? -ne 0 ]; then
 	show_message "device not ready, flash abort"
 	exit 1
