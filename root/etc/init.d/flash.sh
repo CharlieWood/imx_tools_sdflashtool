@@ -84,11 +84,11 @@ get_device_geometry()
 	return 0
 }
 
-# mkfs <partition_id> <label> <desc>
+# mkfs <partition_id> <cmd> <desc>
 mkfs()
 {
 	show_message -n "make filesystem for $3 ... "
-	log_run mke2fs -j ${target_dev}$1 -O ^extent -L "$2"
+	log_run "$2" ${target_dev}$1
 	if [ $? -ne 0 ]; then
 		show_message "FAIL"
 		return 1
@@ -188,10 +188,10 @@ do_partition()
 	fi
 	show_message "OK"
 
-	mkfs 1 "sd" "user card space" &&
-		mkfs 4 "recovery" "recovery" &&
-		mkfs 5 "data" "userdata" &&
-		mkfs 6 "cache" "cache" &&
+	mkfs 1 "mkfs.vfat -n 'sd'" "user card space" &&
+	mkfs 4 "mke2fs -j -O ^extent -L 'recovery'" "recovery" &&
+	mkfs 5 "mke2fs -j -O ^extent -L 'userdata'" "data"  &&
+	mkfs 6 "mke2fs -j -O ^extent -L 'cache'" "cache"
 	if [ $? -ne 0 ]; then
 		return 1
 	fi
