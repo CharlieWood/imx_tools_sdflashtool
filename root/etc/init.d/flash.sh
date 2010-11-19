@@ -31,11 +31,11 @@ target_dev="/dev/emmc"
 
 # override by SDCard/images/partition.cfg
 # unit: M
-boot_space=6
-system_space=200
+boot_space=32
+system_space=250
 data_space=1024
-cache_space=20
-recovery_space=10
+cache_space=128
+recovery_space=16
 
 export PATH=/bin:/sbin:/usr/bin
 
