@@ -5,6 +5,7 @@
 #   |----[repartition]
 #   |----[partition.cfg]
 #   |
+#   |----[u-boot-no-padding.bin]
 #   |----[uImage]
 #   |----[uramdisk.img]
 #   |----[system.img]
@@ -270,6 +271,37 @@ flash_image()
 	fi
 
 	show_message -n "flash image: $title please wait ... "
+
+	if [ "$mode" = "cp" ]; then
+		cmd1="mount -o loop "$img" /img"
+		cmd2="mount -o loop "${target_dev}${offset}" /img2"
+		cmd3="cp -a /img/* /img2"
+		cmd4="umount /img2"
+		cmd5="umount /img"
+
+		desc1="mount img to /img failed"
+		desc2="mount target to /img2 failed"
+		desc3="copy files from /img to /img2 failed"
+		desc4="can't umount /img2"
+		desc5="can't umount /img"
+
+		for i in 1 2 3 4 5; do
+			eval "cmd=\$cmd${i}"
+			log_run $cmd
+			if [ $? -ne 0 ]; then
+				show_message "FAIL"
+				eval "desc=\$desc${i}"
+				show_message "$desc"
+				return 1
+			fi
+		done
+
+		losetup -d /dev/loop0 2> /dev/null
+
+		show_message "OK"
+		return 0
+	fi
+
 	case "$mode" in
 		"dd_part")
 			log_run dd if="$img" of="$target_dev$offset" bs=4096
@@ -277,34 +309,10 @@ flash_image()
 		"dd_offset")
 			log_run dd if="$img" of="$target_dev" bs=1024 seek="$offset"
 			;;
-		"cp")
-			cmd1="mount -o loop "$img" /img"
-			cmd2="mount -o loop "${target_dev}${offset}" /img2"
-			cmd3="cp -a /img/* /img2"
-			cmd4="umount /img2"
-			cmd5="umount /img"
-
-			desc1="mount img to /img failed"
-			desc2="mount target to /img2 failed"
-			desc3="copy files from /img to /img2 failed"
-			desc4="can't umount /img2"
-			desc5="can't umount /img"
-
-			for i in 1 2 3 4 5; do
-				eval "cmd=\$cmd${i}"
-				log_run $cmd
-				if [ $? -ne 0 ]; then
-					show_message "FAIL"
-					eval "desc=\$desc${i}"
-					show_message "$desc"
-					return 1
-				fi
-			done
-
-			losetup -d /dev/loop0 2> /dev/null
-
-			show_message "OK"
-			return 0
+		*)
+			show_message "FAIL"
+			show_message "flash program error, unknown flash mode"
+			return 1
 			;;
 	esac
 
@@ -312,6 +320,7 @@ flash_image()
 		show_message "FAIL"
 		return 1
 	fi
+
 	show_message "OK"
 	return 0
 }
@@ -410,11 +419,13 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
-flash_image "uImage" "kernel" "dd_offset" 1024 &&
+flash_image "u-boot-no-padding.bin" "u-boot" "dd_offset" 1 &&
+	flash_image "uImage" "kernel" "dd_offset" 1024 &&
 	flash_image "uramdisk.img" "ramdisk" "dd_offset" 4096 &&
 	flash_image "system.img" "system" "dd_part" 2 &&
 	flash_image "userdata.img" "userdata" "cp" 5 &&
 	flash_image "recovery.img" "recovery" "dd_part" 4
+
 if [ $? -ne 0 ]; then
 	umount /src
 	exit 1
