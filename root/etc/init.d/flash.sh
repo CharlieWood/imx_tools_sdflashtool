@@ -5,6 +5,8 @@
 #   |----[repartition]
 #   |----[partition.cfg]
 #   |
+#   |----md5sum.txt
+#   |
 #   |----[u-boot-no-padding.bin]
 #   |----[uImage]
 #   |----[uramdisk.img]
@@ -88,7 +90,7 @@ get_device_geometry()
 # mkfs <partition_id> <cmd> <desc>
 mkfs()
 {
-	show_message -n "make filesystem for $3 ... "
+	show_message -n "make filesystem for $3, please wait ... "
 	log_run "$2" ${target_dev}$1
 	if [ $? -ne 0 ]; then
 		show_message "FAIL"
@@ -192,10 +194,7 @@ do_partition()
 	mkfs 1 "mkfs.vfat -n 'sd'" "user card space" &&
 	mkfs 4 "mke2fs -j -O ^extent -L 'recovery'" "recovery" &&
 	mkfs 5 "mke2fs -j -O ^extent -L 'userdata'" "data"  &&
-	mkfs 6 "mke2fs -j -O ^extent -L 'cache'" "cache"
-	if [ $? -ne 0 ]; then
-		return 1
-	fi
+	mkfs 6 "mke2fs -j -O ^extent -L 'cache'" "cache" || return 1
 
 	return 0
 }
@@ -234,21 +233,19 @@ check_space_size()
 check_partition()
 {
 	# get all partitions size
-	show_message -n "get partition liset ... "
+	show_message -n "get partition list ... "
 	get_partitions
 	if [ -z "$partsize_2" -o -z "$partsize_4" -o -z "$partsize_5" -o -z "$partsize_6" ]; then
 		show_message "FAIL"
 		show_message "no enough partition"
+		show_message "'repartition' option is need by flash to a new device."
 		return 1
 	fi
 	show_message "OK"
 
 	show_message -n "check partition size ... "
 	check_space_size "system.img" 2 &&
-		check_space_size "recovery.img" 4
-	if [ $? -ne 0 ]; then
-		return 1
-	fi
+		check_space_size "recovery.img" 4 || return 1
 	show_message "OK"
 
 	return 0
@@ -257,10 +254,6 @@ check_partition()
 # flash_image <img_name> <title> <flash_mode> <part/offset>
 flash_image()
 {
-	if [ "$#" -ne 4 ]; then
-		return 0
-	fi
-
 	img="$img_path/$1"
 	title="$2"
 	mode="$3"
@@ -354,6 +347,57 @@ wait_device()
 	return 1
 }
 
+# read_md5sum <no_arg>
+read_md5sum()
+{
+	if [ ! -f "$img_path/md5sum.txt" ]; then
+		show_message "FAIL"
+		show_message "md5sum.txt not found"
+		return 1
+	fi
+
+	exec 4<&0 0<"$img_path/md5sum.txt"
+	while read sum file; do
+		file=`basename "$file" | tr -- '-.' '__'`
+		eval "${file}_sum=$sum"
+	done
+	exec 0<&4 4<&-
+}
+
+# check_image_md5 <img_name>
+check_image_md5()
+{
+	if [ ! -f "$img_path/$1" ]; then
+		return 0
+	fi
+
+	show_message -n "checking md5sum for image $1 ... "
+	eval "sum=\$`echo "$1" | tr -- '-.' '__'`_sum"
+	if [ -z "$sum" ]; then
+		show_message "FAIL"
+		show_message "no md5sum info found in md5sum.txt"
+		return 1
+	fi
+
+	realsum=`md5sum "$1" | cut -f 1 -d ' '`
+
+	if [ "$realsum" != "$sum" ]; then
+		show_message "FAIL"
+		show_message "md5 check failed"
+		return 1
+	fi
+
+	show_message "OK"
+	return 0
+}
+
+# quit <exit_code>
+function quit()
+{
+	umount /src > /dev/null 2> /dev/null
+	exit "$1"
+}
+
 # program start here
 logfile="$mem_logfile"
 echo > "$logfile"
@@ -404,48 +448,55 @@ logfile="/src/update/logs/flash.log"
 echo "=================== `date` =================" >> "$logfile"
 cat "$mem_logfile" >> "$logfile"
 
+# read images md5sum info
+show_message -n "read md5sum info ... "
+read_md5sum
+if [ $? -ne 0 ]; then
+	quit 1
+fi
+show_message "OK"
+
+# check images md5sum
+check_image_md5 "u-boot-no-padding.bin" &&
+check_image_md5 "uImage" &&
+check_image_md5 "uramdisk.img" &&
+check_image_md5 "system.img" &&
+check_image_md5 "userdata.img" &&
+check_image_md5 "recovery.img" || quit 1
+
 # partition check
 if [ -f "${img_path}/repartition" ]
 then
 	show_message "repartition file found, begin partition"
-	do_partition
+	do_partition || quit 1
 else
 	show_message "checking partition and images"
-	check_partition
+	check_partition || quit 1
 fi
 
-if [ $? -ne 0 ]; then
-	umount /src
-	exit 1
-fi
-
+# flash all images
 flash_image "u-boot-no-padding.bin" "u-boot" "dd_offset" 1 &&
-	flash_image "uImage" "kernel" "dd_offset" 1024 &&
-	flash_image "uramdisk.img" "ramdisk" "dd_offset" 4096 &&
-	flash_image "system.img" "system" "dd_part" 2 &&
-	flash_image "userdata.img" "userdata" "cp" 5 &&
-	flash_image "recovery.img" "recovery" "dd_part" 4
+flash_image "uImage" "kernel" "dd_offset" 1024 &&
+flash_image "uramdisk.img" "ramdisk" "dd_offset" 4096 &&
+flash_image "system.img" "system" "dd_part" 2 &&
+flash_image "userdata.img" "userdata" "cp" 5 &&
+flash_image "recovery.img" "recovery" "dd_part" 4 || quit 1
 
-if [ $? -ne 0 ]; then
-	umount /src
-	exit 1
-fi
-
+# sync target device
 show_message -n "syncing target device ... "
 log_run sync ${target_dev}
 if [ $? -ne 0 ]; then
 	show_message "FAIL"
-	umount /src
-	exit 1
+	quit 1
 fi
 show_message "OK"
 
+# umount /src
 show_message -n "umount /src ... "
 logfile="$mem_logfile"
 log_run umount /src
 if [ $? -ne 0 ]; then
 	show_message "FAIL"
-	umount /src
 	exit 1
 fi
 show_message "OK"
@@ -453,3 +504,4 @@ show_message "OK"
 show_message "flash success!"
 
 return 0
+
