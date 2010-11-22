@@ -448,21 +448,25 @@ logfile="/src/update/logs/flash.log"
 echo "=================== `date` =================" >> "$logfile"
 cat "$mem_logfile" >> "$logfile"
 
-# read images md5sum info
-show_message -n "read md5sum info ... "
-read_md5sum
-if [ $? -ne 0 ]; then
-	quit 1
+if [ -f "$img_path/md5sum.txt" ]; then
+	# read images md5sum info
+	show_message -n "read md5sum info ... "
+	read_md5sum
+	if [ $? -ne 0 ]; then
+		quit 1
+	fi
+	show_message "OK"
+	
+	# check images md5sum
+	check_image_md5 "u-boot-no-padding.bin" &&
+	check_image_md5 "uImage" &&
+	check_image_md5 "uramdisk.img" &&
+	check_image_md5 "system.img" &&
+	check_image_md5 "userdata.img" &&
+	check_image_md5 "recovery.img" || quit 1
+else
+	show_message "*** No md5sum.txt found, don't check image md5sum"
 fi
-show_message "OK"
-
-# check images md5sum
-check_image_md5 "u-boot-no-padding.bin" &&
-check_image_md5 "uImage" &&
-check_image_md5 "uramdisk.img" &&
-check_image_md5 "system.img" &&
-check_image_md5 "userdata.img" &&
-check_image_md5 "recovery.img" || quit 1
 
 # partition check
 if [ -f "${img_path}/repartition" ]
