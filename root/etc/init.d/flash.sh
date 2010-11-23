@@ -392,7 +392,7 @@ check_image_md5()
 }
 
 # quit <exit_code>
-function quit()
+quit()
 {
 	umount /src > /dev/null 2> /dev/null
 	exit "$1"
