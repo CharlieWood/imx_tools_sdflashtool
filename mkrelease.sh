@@ -1,6 +1,6 @@
 #!/bin/bash
 
-images="u-boot-no-padding.bin uImage uramdisk.img system.img userdata.img"
+images="u-boot-no-padding.bin uImage uramdisk.img system.img userdata.img recovery.img"
 
 #usage <no_arg>
 usage()
