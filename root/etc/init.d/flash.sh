@@ -379,7 +379,7 @@ check_image_md5()
 		return 1
 	fi
 
-	realsum=`md5sum "$1" | cut -f 1 -d ' '`
+	realsum=`md5sum "$img_path/$1" | cut -f 1 -d ' '`
 
 	if [ "$realsum" != "$sum" ]; then
 		show_message "FAIL"
