@@ -420,7 +420,6 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
-exit 1
 # mount sd card to /src
 show_message -n "mount SD card: mount ${src_dev} to /src ... "
 umount /src 2> /dev/null
