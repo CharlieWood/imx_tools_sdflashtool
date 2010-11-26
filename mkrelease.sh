@@ -91,11 +91,16 @@ for i in $images; do
 	$CPCMD "$srcdir/$i" "$dest/images/$i" || err_exit "copy file failed"
 done
 
-for i in $images; do
-	echo "md5sum for '$i' ... "
-	sum=`md5sum $srcdir/$i | cut -f 1 -d ' '`
-	echo "$sum $i" >> "$dest/images/md5sum.txt"
-done
+if [ -f "$srcdir/md5sum.txt" ]; then
+	echo "copy '$srcdir/md5sum.txt' to '$dest/images'"
+	cp "$srcdir/md5sum.txt" "$dest/images/"
+else
+	for i in $images; do
+		echo "md5sum for '$i' ... "
+		sum=`md5sum $srcdir/$i | cut -f 1 -d ' '`
+		echo "$sum $i" >> "$dest/images/md5sum.txt"
+	done
+fi
 
 test "$initrel" = "1" && touch "$dest/images/repartition"
 
