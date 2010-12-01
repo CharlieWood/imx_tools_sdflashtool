@@ -1,21 +1,43 @@
 #! /bin/sh
 
+show_message()
+{
+	if [ "$#" -ne 0 -a "$1" = "-n" ]; then
+		shift
+		if [ "$#" -ne 0 ]; then
+			ui_client -n "$1"
+			echo -n "$1"
+		fi
+	else
+		ui_client "$1"
+		echo "$1"
+	fi
+}
+
 /etc/init.d/mkdevs.sh /dev
+
+/bin/ui_server &
 
 /bin/mount -a
 
-echo "start flash.sh"
+for i in 1 2 3 4 5; do
+	if [ -f /tmp/ui_server.sock ]; then
+		break
+	fi
+	sleep 1
+done
+
 /etc/init.d/flash.sh
 if [ $? -eq 0 ]; then
-	echo -n "flash success, system will be reboot"
+	show_message -n "flash success, system will be reboot"
 	for i in 1 2 3; do
 		sleep 1
-		echo -n "."
+		show_message -n "."
 	done
 	reboot
 else
-	echo "****************** FLASH FAILED *********************"
-	echo "flash failed, please check the "flash.log" in SD card"
-	echo "*****************************************************"
+	show_message "****************** FLASH FAILED *********************"
+	show_message "flash failed, please check the 'flash.log' in SD card"
+	show_message "*****************************************************"
 fi
 

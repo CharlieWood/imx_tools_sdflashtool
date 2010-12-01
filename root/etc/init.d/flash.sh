@@ -67,9 +67,11 @@ show_message()
 	if [ "$#" -ne 0 -a "$1" = "-n" ]; then
 		shift
 		if [ "$#" -ne 0 ]; then
+			ui_client -n "$1"
 			echo -n "$1"
 		fi
 	else
+		ui_client "$1"
 		echo "$1"
 	fi
 	do_log "$1"
@@ -324,26 +326,23 @@ wait_device()
 	show_message -n "wait device on eMMC control $1 to ready ."
 	for i in 1 2 3 4 5 6 7 8 9 10; do
 		if [ ! -d /sys/devices/platform/mxsdhci.$1/mmc_host/mmc$1/mmc${1}*/block/mmcblk* ]; then
-			show_message -n "."
 			sleep 1
 			continue
 		fi
 
 		major=`cat /sys/devices/platform/mxsdhci.$1/mmc_host/mmc$1/mmc${1}*/block/mmcblk*/dev | cut -f 1 -d ':'`
 		minor=`cat /sys/devices/platform/mxsdhci.$1/mmc_host/mmc$1/mmc${1}*/block/mmcblk*/dev | cut -f 2 -d ':'`
-		show_message " OK"
+		show_message "OK"
 
 		show_message -n "create device files: "
-		show_message -n "$2"
 		mknod /dev/$2 b $major $minor
 		for j in 1 2 3 4 5 6 7; do
-			show_message -n " ${2}${j}"
 			mknod /dev/$2$j b $major $((minor + j))
 		done
-		show_message " OK"
+		show_message "OK"
 		return 0
 	done
-	show_message " FAIL"
+	show_message "FAIL"
 	return 1
 }
 
@@ -412,6 +411,7 @@ fi
 show_message "INFO: SD flash start ..."
 show_message "INFO: source device is ${src_dev}"
 show_message "INFO: target device is ${target_dev}"
+show_message " "
 
 # wait SD card and eMMC ready
 wait_device 0 "sd" && wait_device 2 "emmc"

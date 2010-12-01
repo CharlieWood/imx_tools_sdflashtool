@@ -60,3 +60,7 @@ for i in `seq 0 9`; do
 	mknod vcsa$i b 7 $((128 + i))
 done
 ln -s vcsa0 vcsa
+
+# fb0
+mkdir /dev/graphics
+mknod /dev/graphics/fb0 c 29 0
