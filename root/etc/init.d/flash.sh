@@ -269,18 +269,20 @@ flash_image()
 
 	if [ "$mode" = "cp" ]; then
 		cmd1="mount -o loop "$img" /img"
-		cmd2="mount -o loop "${target_dev}${offset}" /img2"
-		cmd3="cp -a /img/* /img2"
-		cmd4="umount /img2"
-		cmd5="umount /img"
+		cmd2="mount "${target_dev}${offset}" /img2"
+		cmd3="rm -rf /img2/*"
+		cmd4="cp -a /img/* /img2"
+		cmd5="umount /img2"
+		cmd6="umount /img"
 
 		desc1="mount img to /img failed"
 		desc2="mount target to /img2 failed"
-		desc3="copy files from /img to /img2 failed"
-		desc4="can't umount /img2"
-		desc5="can't umount /img"
+		desc3="remove old files failed"
+		desc4="copy files from /img to /img2 failed"
+		desc5="can't umount /img2"
+		desc6="can't umount /img"
 
-		for i in 1 2 3 4 5; do
+		for i in 1 2 3 4 5 6; do
 			eval "cmd=\$cmd${i}"
 			log_run $cmd
 			if [ $? -ne 0 ]; then
