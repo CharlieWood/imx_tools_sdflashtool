@@ -3,6 +3,7 @@
 # Flash sd Card layout
 # /images
 #   |----[repartition]
+#   |----[clearubootenv]
 #   |----[partition.cfg]
 #   |
 #   |----md5sum.txt
@@ -404,8 +405,7 @@ logfile="$mem_logfile"
 echo > "$logfile"
 
 # wait for SD and eMMC ready
-if [ "`id -u`" != "0" ]
-then
+if [ "`id -u`" != "0" ]; then
 	show_message "ERROR: only root can run flash"
 	exit 1
 fi
@@ -435,8 +435,7 @@ show_message "OK"
 
 # check images directory
 show_message -n "checking image directory ... "
-if [ ! -d "${img_path}" ]
-then
+if [ ! -d "${img_path}" ]; then
 	show_message "FAIL"
 	show_message "No images directory found, flash abort."
 	umount /src
@@ -471,13 +470,23 @@ else
 fi
 
 # partition check
-if [ -f "${img_path}/repartition" ]
-then
+if [ -f "${img_path}/repartition" ]; then
 	show_message "repartition file found, begin partition"
 	do_partition || quit 1
 else
 	show_message "checking partition and images"
 	check_partition || quit 1
+fi
+
+# clear u-boot env
+if [ -f "${img_path}/clearubootenv" ]; then
+	show_message -n "clear u-boot environment ... "
+	dd if=/dev/zero of=/dev/emmc bs=1k seek=768 count=256
+	if [ $? -ne 0 ]; then
+		show_message "FAIL"
+		quit 1
+	fi
+	show_message "OK"
 fi
 
 # flash all images

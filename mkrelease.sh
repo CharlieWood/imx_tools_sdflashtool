@@ -11,6 +11,7 @@ usage()
 	echo "   -l: use ln instead of cp to copy image files"
 	echo "   -i: create initialize release instead of update release"
 	echo "       initialize release create new partition on target device"
+	echo "          and clear u-boot environment"
 	echo "       create a update release is default"
 }
 
@@ -102,7 +103,10 @@ else
 	done
 fi
 
-test "$initrel" = "1" && touch "$dest/images/repartition"
+if [ "$initrel" = "1" ]; then
+	touch "$dest/images/repartition"
+	touch "$dest/images/clearubootenv"
+fi
 
 echo "Ok, release create success."
 
