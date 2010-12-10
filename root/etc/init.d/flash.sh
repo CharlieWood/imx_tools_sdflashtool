@@ -269,7 +269,7 @@ flash_image()
 	show_message -n "flash image: $title please wait ... "
 
 	if [ "$mode" = "cp" ]; then
-		cmd1="mount -o loop "$img" /img"
+		cmd1="mount -o loop,ro "$img" /img"
 		cmd2="mount "${target_dev}${offset}" /img2"
 		cmd3="rm -rf /img2/*"
 		cmd4="cp -a /img/* /img2"
