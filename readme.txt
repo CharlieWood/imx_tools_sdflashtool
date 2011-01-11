@@ -9,22 +9,25 @@ Root
     │   ├── uImage           <==== boot kenrel，可以直接使用正常启动的kernel
     │   └── uramdisk.img     <==== boot ramdisk, 从这个project获得
     │
-    ├── images         <==== 所有要烧写的image文件
-    │   ├── md5sum.txt          <==== MD5校验文件, 必须存在
+    ├── images         <==== 所有要烧写的image文件和配置文件
+    │   ├── md5sum.txt          <==== MD5校验文件
+    │   ├── u-boot-no-padding.bin
     │   ├── uImage
     │   ├── uramdisk.img
+    │   ├── uImage-recovery
+    │   ├── uramdisk-recovery.img
     │   ├── system.img
-    │   ├── userdata.img
-    │   ├── cache.img
-    │   └── recovery.img
+    │   └── userdata.img
     │   
     └── logs
         └── flash.log  <==== 烧写过程中的Log文件
 
 
-特殊文件
+配置文件：
 
 repartition: 强制重新创建分区
+
+clearubootenv: 清除u-boot环境变量
 
 partition.cfg: 与repartition配合，设置各分区default size
   格式：

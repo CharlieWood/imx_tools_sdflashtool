@@ -11,9 +11,10 @@
 #   |----[u-boot-no-padding.bin]
 #   |----[uImage]
 #   |----[uramdisk.img]
+#   |----[uImage-recovery]
+#   |----[uramdisk-recovery.img]
 #   |----[system.img]
 #   |----[userdata.img]
-#   |----[recovery.img]
 #
 
 # flash sd card define
@@ -29,8 +30,8 @@ target_dev="/dev/emmc"
 # [  boot  ][  sd  ][  system  ][  [ data ][ cache ]  ][  recovery  ]
 #
 # boot
-# 0      1k            1M            4M
-# [ MBR ][ u-boot ... ][ kernel ... ][ ramdisk ... ]
+# 0    1k      1M      4M            5M               8M
+# [MBR][u-boot][uImage][uramdisk.img][uImage-recovery][uramdisk-recovery.img]
 #
 
 # override by SDCard/images/partition.cfg
@@ -39,7 +40,6 @@ boot_space=32
 system_space=250
 data_space=1024
 cache_space=128
-recovery_space=16
 
 export PATH=/bin:/sbin:/usr/bin
 
@@ -106,7 +106,7 @@ mkfs()
 # check_img_space_var <img_name> <var_name>
 check_img_space_var()
 {
-	# check system_space size
+	# check image size
 	if [ -f "$img_path/$1" ]; then
 		img_size=$(((`stat -c %s "$img_path/$1"` + 1048575) / 1048576))
 
@@ -135,7 +135,6 @@ do_partition()
 
 	# check system_space size
 	check_img_space_var "system.img" "system_space"
-	check_img_space_var "recovery.img" "recovery_space"
 
 	# clear MBR
 	show_message -n "clear old partition table ... "
@@ -195,7 +194,6 @@ do_partition()
 	show_message "OK"
 
 	mkfs 1 "mkfs.vfat -n 'sd'" "user card space" &&
-	mkfs 4 "mke2fs -j -O ^extent -L 'recovery'" "recovery" &&
 	mkfs 5 "mke2fs -j -O ^extent -L 'userdata'" "data"  &&
 	mkfs 6 "mke2fs -j -O ^extent -L 'cache'" "cache" || return 1
 
@@ -232,6 +230,22 @@ check_space_size()
 	return 0
 }
 
+# check_img_size <img_name> <size unit: k>
+check_img_size()
+{
+	if [ -f "$img_path/$1" ]; then
+		img_size=$(((`stat -c %s "$img_path/$1"` + 1023) / 1024))
+
+		if [ "$2" -lt "$img_size" ]; then
+			show_message "FAIL"
+			show_message "image '%1' too large, can't flash"
+			return 1
+		fi
+	fi
+
+	return 0
+}
+
 # check_partition <no_args>
 check_partition()
 {
@@ -246,9 +260,13 @@ check_partition()
 	fi
 	show_message "OK"
 
-	show_message -n "check partition size ... "
-	check_space_size "system.img" 2 &&
-		check_space_size "recovery.img" 4 || return 1
+	show_message -n "check image size ... "
+	check_img_size "u-boot-no-padding.bin" 1023 &&
+	check_img_size "uImage" 3072 &&
+	check_img_size "uramdisk.img" 1024 &&
+	check_img_size "uImage-recovery" 3072 &&
+	check_img_size "uramdisk-recovery.img" 8192 &&
+	check_space_size "system.img" 2 || return 1
 	show_message "OK"
 
 	return 0
@@ -463,9 +481,10 @@ if [ -f "$img_path/md5sum.txt" ]; then
 	check_image_md5 "u-boot-no-padding.bin" &&
 	check_image_md5 "uImage" &&
 	check_image_md5 "uramdisk.img" &&
+	check_image_md5 "uImage-recovery" &&
+	check_image_md5 "uramdisk-recovery.img" &&
 	check_image_md5 "system.img" &&
-	check_image_md5 "userdata.img" &&
-	check_image_md5 "recovery.img" || quit 1
+	check_image_md5 "userdata.img" || quit 1
 else
 	show_message "*** No md5sum.txt found, don't check image md5sum"
 fi
@@ -494,9 +513,10 @@ fi
 flash_image "u-boot-no-padding.bin" "u-boot" "dd_offset" 1 &&
 flash_image "uImage" "kernel" "dd_offset" 1024 &&
 flash_image "uramdisk.img" "ramdisk" "dd_offset" 4096 &&
+flash_image "uImage-recovery" "recovery kernel" "dd_offset" 5120 &&
+flash_image "uramdisk-recovery.img" "recovery ramdisk" "dd_offset" 8192 &&
 flash_image "system.img" "system" "dd_part" 2 &&
-flash_image "userdata.img" "userdata" "cp" 5 'userdata' &&
-flash_image "recovery.img" "recovery" "dd_part" 4 || quit 1
+flash_image "userdata.img" "userdata" "cp" 5 'userdata' || quit 1
 
 # sync target device
 show_message -n "syncing target device ... "
