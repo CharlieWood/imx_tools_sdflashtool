@@ -254,13 +254,14 @@ check_partition()
 	return 0
 }
 
-# flash_image <img_name> <title> <flash_mode> <part/offset>
+# flash_image <img_name> <title> <flash_mode> <part/offset> [label]
 flash_image()
 {
 	img="$img_path/$1"
 	title="$2"
 	mode="$3"
 	offset="$4"
+	label="$5"
 
 	if [ ! -f "$img" ]; then
 		return 0
@@ -269,16 +270,16 @@ flash_image()
 	show_message -n "flash image: $title please wait ... "
 
 	if [ "$mode" = "cp" ]; then
-		cmd1="mount -o loop,ro "$img" /img"
-		cmd2="mount "${target_dev}${offset}" /img2"
-		cmd3="rm -rf /img2/*"
+		cmd1="mke2fs -j -O ^extent -L '$label' ${target_dev}${offset}"
+		cmd2="mount -o loop,ro "$img" /img"
+		cmd3="mount "${target_dev}${offset}" /img2"
 		cmd4="cp -a /img/* /img2"
 		cmd5="umount /img2"
 		cmd6="umount /img"
 
-		desc1="mount img to /img failed"
-		desc2="mount target to /img2 failed"
-		desc3="remove old files failed"
+		desc1="make filesystem for '${target_dev}${offst}' failed"
+		desc2="mount img to /img failed"
+		desc3="mount target to /img2 failed"
 		desc4="copy files from /img to /img2 failed"
 		desc5="can't umount /img2"
 		desc6="can't umount /img"
@@ -494,7 +495,7 @@ flash_image "u-boot-no-padding.bin" "u-boot" "dd_offset" 1 &&
 flash_image "uImage" "kernel" "dd_offset" 1024 &&
 flash_image "uramdisk.img" "ramdisk" "dd_offset" 4096 &&
 flash_image "system.img" "system" "dd_part" 2 &&
-flash_image "userdata.img" "userdata" "cp" 5 &&
+flash_image "userdata.img" "userdata" "cp" 5 'userdata' &&
 flash_image "recovery.img" "recovery" "dd_part" 4 || quit 1
 
 # sync target device
