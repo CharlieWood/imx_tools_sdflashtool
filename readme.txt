@@ -11,6 +11,7 @@ Root
     │
     ├── images         <==== 所有要烧写的image文件和配置文件
     │   ├── md5sum.txt          <==== MD5校验文件
+    │   │
     │   ├── u-boot-no-padding.bin
     │   ├── uImage
     │   ├── uramdisk.img
