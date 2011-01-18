@@ -26,20 +26,26 @@ src_dev="/dev/sd1"
 target_dev="/dev/emmc"
 
 # partition
-#           1       2          (3) 5       6           4
-# [  boot  ][  sd  ][  system  ][  [ data ][ cache ]  ][  recovery  ]
+#           1       2          (3) 5           6        7               4
+# [  boot  ][  sd  ][  system  ][  [ data ][ cache ][ wowconfig ]  ][  recovery  ]
 #
 # boot
 # 0    1k      1M      4M            5M               8M
 # [MBR][u-boot][uImage][uramdisk.img][uImage-recovery][uramdisk-recovery.img]
 #
+#Physics Division
+#           2          (3) 7            6        5          4             1
+# [  boot  ][  system  ][  [ wowconfig ][ cache ][ data ]  ][  recovery  ][ sd ]
+
 
 # override by SDCard/images/partition.cfg
 # unit: M
 boot_space=32
-system_space=250
+system_space=256
 data_space=1024
-cache_space=128
+cache_space=512
+recovery_space=16
+wowconfig=16
 
 export PATH=/bin:/sbin:/usr/bin
 
@@ -156,26 +162,29 @@ do_partition()
 
 	boot_size=$((boot_space * 1024 * 1024 / dev_unitsize))
 	system_size=$((system_space * 1024 * 1024 / dev_unitsize))
-	data_size=$((data_space * 1024 * 1024 / dev_unitsize))
-	cache_size=$((cache_space * 1024 * 1024 / dev_unitsize))
+	wowconfig_size=$((wowconfig_space * 1024 * 1024 / dev_unitsize))
 	recovery_size=$((recovery_space * 1024 * 1024 / dev_unitsize))
+	cache_size=$((cache_space * 1024 * 1024 / dev_unitsize))
+	data_size=$((data_space * 1024 * 1024 / dev_unitsize))
+	sd_size=$((dev_cyls - boot_size - system_size - data_size - cache_size - recovery_size - wowconfig_size))
 
 	boot_end=$((boot_size - 1))
-	sd_size=$((dev_cyls - boot_size - system_size - data_size - cache_size - recovery_size))
-	sd_end=$((boot_end + sd_size))
-	system_end=$((sd_end + system_size))
-	ext_end=$((dev_cyls - recovery_size))
-	data_end=$((system_end + data_size))
+	system_end=$((boot_end + system_size))
+	ext_end=$((system_end + wowconfig_size + data_size + cache_size))
+	wowconfig_end=$((system_end + wowconfig_size))
+	cache_end=$((wowconfig_end + cache_size))
+	data_end=$((cache_end + data_size)) 
+	recovery_end=$((ext_end + recovery_size))
 
-	# create new partition table
-	part_cmds="n p 1 $boot_end $sd_end
-				n p 2 $((sd_end+1)) $system_end
-				n e 3 $((system_end+1)) $ext_end
-				n p $((ext_end+1)) AUTO
-				n AUTO $data_end
-				n AUTO AUTO
-				t 1 b
-				w"
+	part_cmds="n p 2 $boot_end $system_end
+			n p 4 $((ext_end+1)) $recovery_end
+			n p 1 $((recovery_end+1)) AUTO
+			n e $((system_end+1)) $ext_end
+			n $((cache_end+1)) $data_end
+			n $((wowconfig_end+1)) $cache_end
+			n AUTO AUTO
+			t 1 b
+			w"
 
 	show_message "create new partition table ... "
 	for i in $part_cmds; do
@@ -193,9 +202,16 @@ do_partition()
 	fi
 	show_message "OK"
 
+	#mkfs 1 "mkfs.vfat -n 'sd'" "user card space" &&
+	#mkfs 2 "mkfs.ext4 -j -O ^extent -L 'system'" "system" && 
+	#mkfs 4 "mkfs.ext4 -j -O ^extent -L 'userdata'" "data" &&
+	#mkfs 7 "mkfs.ext4 -j -O ^extent -L 'wowconfig'" "wowconfig" && 
+	#mkfs 5 "mkfs.ext4 -j -O ^extent -L 'recovery'" "recovery"  &&
+	#mkfs 6 "mkfs.ext4 -j -O ^extent -L 'cache'" "cache" || return 1
 	mkfs 1 "mkfs.vfat -n 'sd'" "user card space" &&
-	mkfs 5 "mke2fs -j -O ^extent -L 'userdata'" "data"  &&
-	mkfs 6 "mke2fs -j -O ^extent -L 'cache'" "cache" || return 1
+	mkfs 5 "mke2fs -j -O ^extent -L 'userdata'" "data" &&
+	mkfs 6 "mke2fs -j -O ^extent -L 'cache'" "cache" &&
+	mkfs 7 "mke2fs -j -O ^extent -L 'wowconfig'" "wowconfig" || return 1 
 
 	return 0
 }
