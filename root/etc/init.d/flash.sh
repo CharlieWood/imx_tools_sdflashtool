@@ -45,7 +45,7 @@ system_space=256
 data_space=1024
 cache_space=512
 recovery_space=16
-wowconfig=16
+wowconfig_space=16
 
 export PATH=/bin:/sbin:/usr/bin
 
