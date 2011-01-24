@@ -44,7 +44,6 @@ static void clear()
 	gr_fill(0, 0, width, height);
 }
 
-//TODO: why need double gr_flip() ?
 static void ui_init()
 {
 	gr_init();
@@ -58,7 +57,6 @@ static void ui_init()
 	cur_y = CHAR_HEIGHT;
 
 	clear();
-	gr_flip();
 	gr_flip();
 }
 
@@ -82,7 +80,6 @@ static void draw_message()
 			break;
 		else {
 			set_color(t->color);
-			printf("x = %d, y = %d, msg = %s\n", x, y, t->msg);
 			gr_text(x, y, t->msg);
 		}
 	}
@@ -175,7 +172,6 @@ static void show_message(const char *msg, int nl)
 	set_color(color);
 	gr_text(cur_x, cur_y, msg);
 	gr_flip();
-	gr_flip();
 
 	pthread_mutex_unlock(&g_lock);
 
@@ -258,7 +254,6 @@ int main()
 					gr_fill(prog_x, prog_y - CHAR_HEIGHT, prog_x + CHAR_WIDTH, prog_y);
 					set_color(BLUE);
 					gr_text(prog_x, prog_y, prog_strs[prog_step]);
-					gr_flip();
 					gr_flip();
 				}
 				break;
