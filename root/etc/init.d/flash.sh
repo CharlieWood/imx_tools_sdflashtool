@@ -435,6 +435,17 @@ quit()
 	exit "$1"
 }
 
+# check_enter_shell
+check_enter_shell()
+{
+	echo "Press any letter key will enter a shell"
+	sleep 1
+	stty -echo -icanon time 0 min 0
+	read line
+	stty sane
+	test -n "$line"
+}
+
 # program start here
 logfile="$mem_logfile"
 echo > "$logfile"
@@ -454,6 +465,13 @@ show_message " "
 wait_device 0 "sd" && wait_device 2 "emmc"
 if [ $? -ne 0 ]; then
 	show_message "device not ready, flash abort"
+	exit 1
+fi
+
+# wait a key enter normal shell
+check_enter_shell
+if [ $? -eq 0 ]; then
+	show_message "**** welcome ****"
 	exit 1
 fi
 
