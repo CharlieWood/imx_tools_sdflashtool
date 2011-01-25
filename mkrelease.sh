@@ -29,13 +29,7 @@ CPCMD="cp"
 rundir=`dirname "$0"`
 initrel=0
 
-if [ ! -f "$rundir/uramdisk.img" ]; then
-	echo "can't found uramdisk.img in '$rundir'"
-	echo "please run it from correct directory"
-	exit 1
-fi
-
-while getopts 's:o:li' OPT; do
+while getopts 's:o:lih' OPT; do
 	case $OPT in
 		s)
 			srcdir="$OPTARG"
@@ -49,7 +43,7 @@ while getopts 's:o:li' OPT; do
 		i)
 			initrel=1
 			;;
-		*)
+		h|*)
 			usage
 			exit 1
 			;;
@@ -67,6 +61,10 @@ if [ -z "$outdir" ]; then
 fi
 
 test ! -d "$outdir" && err_exit "invalid output directory"
+
+if [ ! -f "$srcdir/uramdisk-flash.img" ]; then
+	err_exit "can't found flash uramdisk in source directory"
+fi
 
 for i in $images; do
 	test ! -f "$srcdir/$i" && err_exit "image $i not found in directory '$srcdir'"
@@ -86,7 +84,8 @@ mkdir "$dest" &&
 
 echo "copy flash bin kernel and ramdisk"
 /bin/cp "$srcdir/uImage" "$dest/bin" &&
-	/bin/cp "$rundir/uramdisk.img" "$dest/bin" || err_exit "copy file failed"
+	/bin/cp "$srcdir/uramdisk-flash.img" "$dest/bin/uramdisk.img" ||
+		err_exit "copy file failed"
 
 for i in $images; do
 	echo "copy file '$i' ..."
