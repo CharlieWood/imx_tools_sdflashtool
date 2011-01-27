@@ -40,6 +40,7 @@ boot_space=32
 system_space=250
 data_space=1024
 cache_space=128
+recovery_space=16
 
 export PATH=/bin:/sbin:/usr/bin
 
