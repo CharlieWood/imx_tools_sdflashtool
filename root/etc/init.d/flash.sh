@@ -552,6 +552,15 @@ flash_image "uramdisk-recovery.img" "recovery ramdisk" "dd_offset" 8192 &&
 flash_image "system.img" "system" "dd_part" 2 &&
 flash_image "userdata.img" "userdata" "cp" 5 'userdata' || quit 1
 
+show_message -n "clear cache data ... "
+log_run mke2fs -j /dev/emmc6
+if [ $? -ne 0 ]; then
+	show_message "FAIL"
+	quit 1
+fi
+show_message "OK"
+
+
 # sync target device
 show_message -n "syncing target device ... "
 log_run sync ${target_dev}
