@@ -8,6 +8,7 @@
 #   |
 #   |----md5sum.txt
 #   |
+#   |----[u-boot-no-padding.bin]
 #   |----[uImage]
 #   |----[uramdisk.img]
 #   |----[uImage-recovery]
@@ -278,6 +279,7 @@ check_partition()
 	show_message "OK"
 
 	show_message -n "check image size ... "
+	check_img_size "u-boot-no-padding.bin" 1023 &&
 	check_img_size "uImage" 3072 &&
 	check_img_size "uramdisk.img" 1024 &&
 	check_img_size "uImage-recovery" 3072 &&
@@ -512,6 +514,7 @@ if [ -f "$img_path/md5sum.txt" ]; then
 	show_message "OK"
 	
 	# check images md5sum
+	check_image_md5 "u-boot-no-padding.bin" &&
 	check_image_md5 "uImage" &&
 	check_image_md5 "uramdisk.img" &&
 	check_image_md5 "uImage-recovery" &&
@@ -543,6 +546,7 @@ if [ -f "${img_path}/clearubootenv" ]; then
 fi
 
 # flash all images
+flash_image "u-boot-no-padding.bin" "u-boot" "dd_offset" 1 &&
 flash_image "uImage" "kernel" "dd_offset" 1024 &&
 flash_image "uramdisk.img" "ramdisk" "dd_offset" 4096 &&
 flash_image "uImage-recovery" "recovery kernel" "dd_offset" 5120 &&
