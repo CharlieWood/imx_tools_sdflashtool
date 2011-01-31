@@ -13,6 +13,8 @@ $(PRODUCT_OUT)/uramdisk-flash.img: | $(ACP)
 		-n "Android Flash Filesystem" \
 		-d "$(ANDROID_BUILD_TOP)/$(PRODUCT_OUT)/ramdisk-flash.img" \
 		"$(ANDROID_BUILD_TOP)/$(PRODUCT_OUT)/uramdisk-flash.img"
+	@echo "flashtool: `head -1 $(FLASH_RAMDISK_ROOT)/Changelog|cut -f 1 -d ' '`" >> \
+		$(ANDROID_BUILD_TOP)/$(PRODUCT_OUT)/version.lst
 
 ALL_PREBUILT += flashramdisk
 

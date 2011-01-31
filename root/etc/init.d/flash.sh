@@ -17,6 +17,8 @@
 #   |----[userdata.img]
 #
 
+VERSION="1.0"
+
 # flash sd card define
 mem_logfile="/tmp/flash.log"
 img_path="/src/update/images"
@@ -456,7 +458,7 @@ if [ "`id -u`" != "0" ]; then
 	exit 1
 fi
 
-show_message "INFO: SD flash start ..."
+show_message "INFO: SD flash tool ${VERSION} start ..."
 show_message "INFO: source device is ${src_dev}"
 show_message "INFO: target device is ${target_dev}"
 show_message " "
