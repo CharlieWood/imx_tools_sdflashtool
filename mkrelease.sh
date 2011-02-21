@@ -102,7 +102,7 @@ for i in $flash_img; do
 done
 
 echo "copy u-boot images ..."
-/bin/cp "$srcdir/$i" "$dest/boot/${boardname}_u-boot.img" || err_exit "copy u-boot failed"
+/bin/cp "$srcdir/$uboot_img" "$dest/boot/${boardname}_u-boot.img" || err_exit "copy u-boot failed"
 
 if [ -f "$srcdir/md5sum.txt" ]; then
 	echo "copy '$srcdir/md5sum.txt' to '$dest/images'"
