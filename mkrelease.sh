@@ -2,7 +2,7 @@
 
 flash_img="uImage uramdisk.img \
 	uImage-recovery uramdisk-recovery.img system.img userdata.img"
-uboot_img="u-boot-no-padding.bin"
+uboot_img="u-boot.img"
 
 images="$uboot_img $flash_img"
 
