@@ -188,7 +188,7 @@ do_partition()
 			t 1 b
 			w"
 
-	show_message "create new partition table ... "
+	show_message -n "create new partition table ... "
 	for i in $part_cmds; do
 		if [ "$i" = "AUTO" ]
 		then
