@@ -17,7 +17,7 @@
 #   |----[userdata.img]
 #
 
-VERSION="1.0"
+VERSION="1.1"
 
 # flash sd card define
 mem_logfile="/tmp/flash.log"
