@@ -365,13 +365,13 @@ wait_device()
 {
 	show_message -n "wait device on eMMC control $1 to ready ."
 	for i in 1 2 3 4 5 6 7 8 9 10; do
-		if [ ! -d /sys/devices/platform/mxsdhci.$1/mmc_host/mmc$1/mmc${1}*/block/mmcblk* ]; then
+		if [ ! -d /sys/devices/platform/mxsdhci.$1/mmc_host/mmc*/mmc*/block/mmcblk* ]; then
 			sleep 1
 			continue
 		fi
 
-		major=`cat /sys/devices/platform/mxsdhci.$1/mmc_host/mmc$1/mmc${1}*/block/mmcblk*/dev | cut -f 1 -d ':'`
-		minor=`cat /sys/devices/platform/mxsdhci.$1/mmc_host/mmc$1/mmc${1}*/block/mmcblk*/dev | cut -f 2 -d ':'`
+		major=`cat /sys/devices/platform/mxsdhci.$1/mmc_host/mmc*/mmc*/block/mmcblk*/dev | cut -f 1 -d ':'`
+		minor=`cat /sys/devices/platform/mxsdhci.$1/mmc_host/mmc*/mmc*/block/mmcblk*/dev | cut -f 2 -d ':'`
 		show_message "OK"
 
 		show_message -n "create device files: "
