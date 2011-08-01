@@ -256,7 +256,7 @@ check_img_size()
 
 		if [ "$2" -lt "$img_size" ]; then
 			show_message "FAIL"
-			show_message "image '%1' too large, can't flash"
+			show_message "image '$1' too large, can't flash"
 			return 1
 		fi
 	fi
